@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{efaf771b-f31d-41f8-8a68-6f48495e6fc2}</ProjectGuid>
+    <RootNamespace>OpenCircuitX</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(wxwin)\include\msvc;$(wxwin)\include;$(ProjectDir)src;$(ProjectDir)include;$(ProjectDir)include\mdap;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(wxwin)\lib\vc_lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(wxwin)\include\msvc;$(wxwin)\include;$(ProjectDir)src;$(ProjectDir)include;$(ProjectDir)include\mdap;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(wxwin)\lib\vc_lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(wxwin)\include\msvc;$(wxwin)\include;$(ProjectDir)src;$(ProjectDir)include;$(ProjectDir)include\mdap;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(wxwin)\lib\vc_x64_lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(wxwin)\include\msvc;$(wxwin)\include;$(ProjectDir)src;$(ProjectDir)include;$(ProjectDir)include\mdap;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>wxmsw32u_core.lib;wxbase32u.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(wxwin)\lib\vc_x64_lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\core\circuit\gate.cpp" />
+    <ClCompile Include="src\core\simulation\circuit_simulator.cpp" />
+    <ClCompile Include="src\core\simulation\vcd_parser.cpp" />
+    <ClCompile Include="src\core\toolchain\fpga_toolchain.cpp" />
+    <ClCompile Include="src\core\plugin\plugin_manager.cpp" />
+    <ClCompile Include="src\core\hdl\hdl_parser.cpp" />
+    <ClCompile Include="src\core\hdl\vhdl_entity_parser.cpp" />
+    <ClCompile Include="src\core\hdl\vhdl_gate_extractor.cpp" />
+    <ClCompile Include="src\core\update_check.cpp" />
+    <ClCompile Include="src\ui\shell\app_theme.cpp" />
+    <ClCompile Include="src\ui\shell\ocx_menubar.cpp" />
+    <ClCompile Include="src\ui\shell\ocx_toolbar.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_file_ops.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_build_ops.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_fpga_ops.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_explorer_ops.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_project_loading.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_editor_ops.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_testbench.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_theme_ops.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_hdl_ops.cpp" />
+    <ClCompile Include="src\ui\mainwindow\mainwindow_snippets.cpp" />
+    <ClCompile Include="src\ui\canvas\circuit_canvas.cpp" />
+    <ClCompile Include="src\ui\canvas\gate_renderer_ansi.cpp" />
+    <ClCompile Include="src\ui\canvas\canvas_draw.cpp" />
+    <ClCompile Include="src\ui\canvas\canvas_input.cpp" />
+    <ClCompile Include="src\ui\canvas\canvas_sim.cpp" />
+    <ClCompile Include="src\ui\canvas\canvas_edit.cpp" />
+    <ClCompile Include="src\ui\canvas\canvas_io.cpp" />
+    <ClCompile Include="src\ui\waveform\waveform_panel.cpp" />
+    <ClCompile Include="src\ui\waveform\waveform_wavepanel.cpp" />
+    <ClCompile Include="src\ui\editor\logic_editor_panel.cpp" />
+    <ClCompile Include="src\ui\editor\logic_editor_tabs.cpp" />
+    <ClCompile Include="src\ui\editor\logic_editor_edit.cpp" />
+    <ClCompile Include="src\ui\editor\logic_editor_search.cpp" />
+    <ClCompile Include="src\ui\panels\canvas_action_panel.cpp" />
+    <ClCompile Include="src\ui\panels\component_palette.cpp" />
+    <ClCompile Include="src\ui\panels\find_results_panel.cpp" />
+    <ClCompile Include="src\ui\panels\outline_panel.cpp" />
+    <ClCompile Include="src\ui\panels\output_panel.cpp" />
+    <ClCompile Include="src\ui\panels\project_explorer_panel.cpp" />
+    <ClCompile Include="src\ui\panels\watch_panel.cpp" />
+    <ClCompile Include="src\ui\panels\welcome_panel.cpp" />
+    <ClCompile Include="src\ui\rtl_view\rtl_view_panel.cpp" />
+    <ClCompile Include="src\ui\rtl_view\rtl_view_schematic.cpp" />
+    <ClCompile Include="src\ui\rtl_view\rtl_view_events.cpp" />
+    <ClCompile Include="src\ui\rtl_view\rtl_view_draw.cpp" />
+    <ClCompile Include="src\ui\panels\workspace_tabs.cpp" />
+    <ClCompile Include="src\ui\dialogs\about_dialog.cpp" />
+    <ClCompile Include="src\ui\dialogs\new_project_dialog.cpp" />
+    <ClCompile Include="src\ui\dialogs\open_project_dialog.cpp" />
+    <ClCompile Include="src\ui\dialogs\quick_open_dialog.cpp" />
+    <ClCompile Include="src\ui\dialogs\settings_dialog.cpp" />
+    <ClCompile Include="src\ui\dialogs\symbol_search_dialog.cpp" />
+    <ClCompile Include="src\ui\dialogs\update_checker.cpp" />
+    <ClCompile Include="src\utils\project_file.cpp" />
+    <ClCompile Include="include\mdap\wxMaterialDesignArtProvider.cpp" />
+    <ClCompile Include="include\mdap\wxMaterialFilledArt.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\wx_pch.h" />
+    <ClInclude Include="src\core\version.h" />
+    <ClInclude Include="src\core\circuit\gate.h" />
+    <ClInclude Include="src\core\simulation\circuit_simulator.h" />
+    <ClInclude Include="src\core\simulation\vcd_parser.h" />
+    <ClInclude Include="src\core\toolchain\fpga_toolchain.h" />
+    <ClInclude Include="src\core\plugin\plugin_api.h" />
+    <ClInclude Include="src\core\plugin\plugin_manager.h" />
+    <ClInclude Include="src\core\hdl\hdl_parser.h" />
+    <ClInclude Include="src\core\hdl\vhdl_entity_parser.h" />
+    <ClInclude Include="src\core\hdl\vhdl_gate_extractor.h" />
+    <ClInclude Include="src\core\update_check.h" />
+    <ClInclude Include="src\ui\shell\app_theme.h" />
+    <ClInclude Include="src\ui\shell\ocx_menubar.h" />
+    <ClInclude Include="src\ui\shell\ocx_toolbar.h" />
+    <ClInclude Include="src\ui\mainwindow\mainwindow.h" />
+    <ClInclude Include="src\ui\canvas\circuit_canvas.h" />
+    <ClInclude Include="src\ui\canvas\gate_renderer.h" />
+    <ClInclude Include="src\ui\canvas\gate_renderer_ansi.h" />
+    <ClInclude Include="src\ui\canvas\circuit_canvas_private.h" />
+    <ClInclude Include="src\ui\waveform\waveform_panel.h" />
+    <ClInclude Include="src\ui\waveform\waveform_internal.h" />
+    <ClInclude Include="src\ui\editor\logic_editor_panel.h" />
+    <ClInclude Include="src\ui\editor\logic_editor_private.h" />
+    <ClInclude Include="src\ui\panels\canvas_action_panel.h" />
+    <ClInclude Include="src\ui\panels\component_palette.h" />
+    <ClInclude Include="src\ui\panels\find_results_panel.h" />
+    <ClInclude Include="src\ui\panels\outline_panel.h" />
+    <ClInclude Include="src\ui\panels\output_panel.h" />
+    <ClInclude Include="src\ui\panels\project_explorer_panel.h" />
+    <ClInclude Include="src\ui\panels\watch_panel.h" />
+    <ClInclude Include="src\ui\panels\welcome_panel.h" />
+    <ClInclude Include="src\ui\rtl_view\rtl_view_panel.h" />
+    <ClInclude Include="src\ui\rtl_view\rtl_view_schematic_p.h" />
+    <ClInclude Include="src\ui\panels\workspace_tabs.h" />
+    <ClInclude Include="src\ui\dialogs\about_dialog.h" />
+    <ClInclude Include="src\ui\dialogs\new_project_dialog.h" />
+    <ClInclude Include="src\ui\dialogs\open_project_dialog.h" />
+    <ClInclude Include="src\ui\dialogs\quick_open_dialog.h" />
+    <ClInclude Include="src\ui\dialogs\settings_dialog.h" />
+    <ClInclude Include="src\ui\dialogs\symbol_search_dialog.h" />
+    <ClInclude Include="src\ui\dialogs\update_checker.h" />
+    <ClInclude Include="src\utils\project_file.h" />
+    <ClInclude Include="include\mdap\wxMaterialDesignArtProvider.hpp" />
+    <ClInclude Include="include\mdap\wxMaterialFilledArt.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="OpenCircuitX.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

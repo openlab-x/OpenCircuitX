@@ -1,0 +1,49 @@
+# Visual Studio
+.vs/
+*.user
+*.aps
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.VC.opendb
+
+# Build output (VS2022 x64/Debug/Release, at root and under OpenCircuitX/)
+Debug/
+Release/
+x64/
+x86/
+*.obj
+*.pdb
+*.ilk
+*.iobj
+*.ipdb
+*.exp
+*.lib
+*.tlog
+*.log
+
+# CMake (Linux/macOS out-of-source build)
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# NSIS installer output
+installer/*.exe
+
+# Vendored third-party wxWidgets source/archive (build dependency, not project
+# code - build it separately per README and point WXWIN at it, never commit it)
+pack/
+
+# Internal-only planning notes (roadmap, known-issue seeding strategy, etc.) -
+# not meant to be public
+localdev/
+PLAN.md
+
+# Documentation site - deployed to the website separately, not via this repo
+docs/
+
+# OS cruft
+.DS_Store
+Thumbs.db
