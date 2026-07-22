@@ -16,6 +16,9 @@ if(DEFINED WXWIN)
 endif()
 
 find_package(wxWidgets REQUIRED COMPONENTS core base stc aui adv net)
+if(APPLE OR LINUX)
+find_package(CURL)
+endif()
 include(${wxWidgets_USE_FILE})
 
 # ---------------------------------------------------------------------------
@@ -132,6 +135,10 @@ target_include_directories(OpenCircuitX PRIVATE
 # ---------------------------------------------------------------------------
 
 target_link_libraries(OpenCircuitX PRIVATE ${wxWidgets_LIBRARIES})
+
+if(APPLE OR LINUX)
+target_link_libraries(OpenCircuitX PRIVATE CURL::libcurl)
+endif()
 
 # On Linux, wxWidgets may need dl for plugin loading (wxDynamicLibrary)
 if(UNIX AND NOT APPLE)
