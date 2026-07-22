@@ -1,6 +1,7 @@
 #pragma once
 #include <wx/wx.h>
 #include <wx/notebook.h>
+#include <wx/spinctrl.h>
 
 class SettingsDialog : public wxDialog
 {
