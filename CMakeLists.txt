@@ -16,10 +16,13 @@ if(DEFINED WXWIN)
 endif()
 
 find_package(wxWidgets REQUIRED COMPONENTS core base stc aui adv net)
-if(APPLE OR LINUX)
-find_package(CURL)
-endif()
 include(${wxWidgets_USE_FILE})
+
+# curl is only needed for the non-Windows update-check path
+# (Windows uses WinINet instead, see src/core/update_check.cpp)
+if(NOT WIN32)
+    find_package(CURL REQUIRED)
+endif()
 
 # ---------------------------------------------------------------------------
 # Sources
@@ -136,8 +139,8 @@ target_include_directories(OpenCircuitX PRIVATE
 
 target_link_libraries(OpenCircuitX PRIVATE ${wxWidgets_LIBRARIES})
 
-if(APPLE OR LINUX)
-target_link_libraries(OpenCircuitX PRIVATE CURL::libcurl)
+if(NOT WIN32)
+    target_link_libraries(OpenCircuitX PRIVATE CURL::libcurl)
 endif()
 
 # On Linux, wxWidgets may need dl for plugin loading (wxDynamicLibrary)
