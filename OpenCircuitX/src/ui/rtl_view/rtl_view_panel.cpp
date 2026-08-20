@@ -1,4 +1,5 @@
 #include "rtl_view_schematic_p.h"
+#include <wx/filename.h>
 
 namespace {
 enum {
@@ -102,12 +103,34 @@ RTLViewPanel::RTLViewPanel(wxWindow* parent)
 }
 
 //** RTLViewPanel : public API **//
-void RTLViewPanel::ParseAndShow(const wxString& vhdlCode)
+void RTLViewPanel::ParseAndShow(const wxString& vhdlCode, const wxString& filePath)
 {
     m_entity     = VHDLEntityParser::ParseText(vhdlCode);
     m_netlist    = VHDLGateExtractor::Extract(vhdlCode, m_entity);
     m_hasContent = m_entity.valid;
     m_hasGates   = m_hasContent && !m_netlist.gates.empty();
+
+    // RTL View parses VHDL source only. Without this, a Verilog file just
+    // renders an empty panel and the user has no idea why.
+    if (!m_hasContent)
+    {
+        wxString ext = wxFileName(filePath).GetExt().Lower();
+        bool looksVerilog = (ext == "v" || ext == "sv" || ext == "svh")
+                            || (filePath.IsEmpty()
+                                && vhdlCode.Lower().Contains("module ")
+                                && !vhdlCode.Lower().Contains("entity "));
+
+        if (looksVerilog)
+            m_schem->SetEmptyMessage(
+                "RTL View currently parses VHDL only, not Verilog or SystemVerilog.\n"
+                "Open a .vhd file to see a schematic here.");
+        else
+            m_schem->SetEmptyMessage(wxEmptyString);
+    }
+    else
+    {
+        m_schem->SetEmptyMessage(wxEmptyString);
+    }
 
     m_schem->SetData(&m_entity, &m_netlist, m_hasContent, m_hasGates);
     BuildTree();

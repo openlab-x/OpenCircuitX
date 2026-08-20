@@ -454,7 +454,14 @@ private:
                 long long delta = m_cursorTime - m_refTime;
                 wxString dStr;
                 if (!m_displayUnit.IsEmpty())
-                    dStr = wxString::Format("  \u0394T = %.3f%s", (double)delta / m_displayDivisor, " " + m_displayUnit);
+                    // Delta (U+0394) via explicit UTF-8 bytes, not a \uXXXX
+                    // escape in a narrow literal - same mojibake risk as
+                    // the About dialog's middle dot, the escape's byte
+                    // encoding depends on the compiler's execution
+                    // charset, which doesn't reliably agree with wx's
+                    // runtime UTF-8 decode.
+                    dStr = "  " + wxString::FromUTF8("\xCE\x94")
+                         + wxString::Format("T = %.3f%s", (double)delta / m_displayDivisor, " " + m_displayUnit);
                 else
                     dStr = wxString::Format("  dT = %lld%s", delta, unitStr);
                 label += dStr;

@@ -191,18 +191,75 @@ void MainWindow::OnRunSimulation(wxCommandEvent& event)
                              ? currentProjectDirectory + "/"
                              : "") + stem + ".vvp";
 
+        // Compile every .v/.sv file in the project, not just the open one -
+        // a testbench alone won't elaborate without the design under test.
+        wxArrayString vFiles = CollectProjectVerilogFiles();
+        if (vFiles.IsEmpty())
+            vFiles.Add(filePath);
+        circuitSimulator->SetProjectFiles(vFiles);
+
         bool ok = circuitSimulator->CompileVerilog(filePath, output, errors);
         if (ok)
         {
             busyDlg.Update(50, "Step 2/2  Running simulation...");
             ok = circuitSimulator->RunVVP(vvpPath, output, errors);
         }
+
+        // Icarus has no --vcd flag; the testbench decides where (and whether)
+        // a waveform is written via $dumpfile/$dumpvars. Look for the file the
+        // generated testbenches use, then fall back to any .vcd vvp just wrote.
+        wxString vlogVcd;
+        if (ok && !currentProjectDirectory.IsEmpty())
+        {
+            wxString byStem = currentProjectDirectory + "/" + stem + ".vcd";
+            if (wxFileExists(byStem))
+                vlogVcd = byStem;
+            else
+            {
+                wxString found;
+                wxDir dir(currentProjectDirectory);
+                if (dir.IsOpened() && dir.GetFirst(&found, "*.vcd", wxDIR_FILES))
+                    vlogVcd = currentProjectDirectory + "/" + found;
+            }
+        }
+
+        if (!vlogVcd.IsEmpty())
+        {
+            busyDlg.Update(90, "Loading waveform...");
+            waveformPanel->LoadVCD(vlogVcd);
+            workspaceNotebook->SetSelection(1);
+            wxYield();
+        }
         busyDlg.Update(100, "Done.");
 
         for (size_t i = 0; i < output.GetCount(); ++i) outputPanel->LogMessage(output[i]);
         for (size_t i = 0; i < errors.GetCount(); ++i) outputPanel->LogError(errors[i]);
+
         if (!ok) { outputPanel->ShowErrorTab(); OCXStatus("Simulation failed."); }
-        else        OCXStatus("Verilog simulation complete.");
+        else
+        {
+            OCXStatus("Verilog simulation complete.");
+
+            if (vlogVcd.IsEmpty())
+            {
+                // Not an error - Icarus only writes a VCD when the testbench
+                // asks for one, and a lot of hand-written testbenches don't.
+                outputPanel->LogMessage(
+                    "No .vcd waveform was produced by this run.");
+                outputPanel->LogMessage(
+                    "  -> Icarus Verilog only writes a waveform when the testbench asks for one.");
+                outputPanel->LogMessage(
+                    "  -> Add this to your testbench's initial block:");
+                outputPanel->LogMessage(
+                    "       $dumpfile(\"" + stem + ".vcd\"); $dumpvars(0, " + stem + ");");
+                outputPanel->LogMessage(
+                    "  -> New testbenches from Tools > Generate Testbench include this already.");
+            }
+            else
+            {
+                outputPanel->LogMessage("Waveform loaded: " + vlogVcd);
+            }
+        }
         return;
     }
 

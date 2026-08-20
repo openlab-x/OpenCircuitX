@@ -1,0 +1,2 @@
+read_verilog "C:/Users/demo/source/repos/OpenCircuitX/examples/yosys/and_gate/and_gate.v"
+synth_ice40 -top and_gate -json "C:/Users/demo/source/repos/OpenCircuitX/examples/yosys/and_gate/and_gate.json"

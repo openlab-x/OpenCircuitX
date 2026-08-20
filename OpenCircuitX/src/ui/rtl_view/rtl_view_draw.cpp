@@ -1,5 +1,6 @@
 #include "rtl_view_schematic_p.h"
 #include <wx/dcgraph.h>
+#include <wx/arrstr.h>
 
 //** Schematic : drawing **//
 void RTLViewPanel::Schematic::DrawEmptyState(wxDC& dc, const wxSize& sz)
@@ -7,9 +8,21 @@ void RTLViewPanel::Schematic::DrawEmptyState(wxDC& dc, const wxSize& sz)
     dc.SetFont(wxFont(10, wxFONTFAMILY_DEFAULT,
                       wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
     dc.SetTextForeground(OCXTheme::FgDim());
-    wxString msg = "RTL View  --  save a VHDL file to render the schematic";
-    wxSize   tsz = dc.GetTextExtent(msg);
-    dc.DrawText(msg, (sz.x - tsz.x) / 2, (sz.y - tsz.y) / 2);
+
+    wxString msg = m_emptyMsg.IsEmpty()
+                     ? "RTL View  --  save a VHDL file to render the schematic"
+                     : m_emptyMsg;
+
+    // Message may carry a second explanatory line.
+    wxArrayString lines = wxSplit(msg, '\n');
+    int lineH = dc.GetCharHeight() + 4;
+    int blockY = (sz.y - lineH * (int)lines.GetCount()) / 2;
+
+    for (size_t i = 0; i < lines.GetCount(); ++i)
+    {
+        wxSize tsz = dc.GetTextExtent(lines[i]);
+        dc.DrawText(lines[i], (sz.x - tsz.x) / 2, blockY + (int)i * lineH);
+    }
 }
 
 void RTLViewPanel::Schematic::DrawEntity(wxDC& dc, const wxSize& logSz)

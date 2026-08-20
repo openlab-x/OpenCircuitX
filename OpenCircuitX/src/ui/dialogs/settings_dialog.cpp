@@ -5,6 +5,7 @@
 #include <wx/notebook.h>
 #include <wx/statline.h>
 #include <wx/spinctrl.h>
+#include <wx/scrolwin.h>
 
 enum
 {
@@ -34,7 +35,21 @@ wxBEGIN_EVENT_TABLE(SettingsDialog, wxDialog)
 wxEND_EVENT_TABLE()
 
 SettingsDialog::SettingsDialog(wxWindow* parent)
-    : wxDialog(parent, wxID_ANY, "Settings", wxDefaultPosition, wxSize(580, 580))
+    // Height bumped from the original 580 to reduce how often the tab
+    // content actually needs to scroll (see the tab panels below, both
+    // wxScrolledWindow - that's the real fix for GTK rendering the same
+    // content taller than Windows does; this is just a minor nicety).
+    // Width bumped too - the vertical scrollbar the wxScrolledWindow tabs
+    // can now show eats a slice of row width the original 580 didn't leave
+    // room for, clipping the rightmost "Browse..." button on any row that
+    // ends up scrolled (only tabs that actually need to scroll lose this
+    // width, which is why Simulation looked fine while FPGA didn't). A
+    // first +30 wasn't quite enough on the actual GTK theme in use;
+    // widened further with real headroom instead of nudging by 10px at a
+    // time - going too wide costs nothing but harmless empty space on
+    // Windows or any tab that isn't scrolling, going too narrow clips a
+    // button, so it's worth erring generous here.
+    : wxDialog(parent, wxID_ANY, "Settings", wxDefaultPosition, wxSize(650, 680))
 {
     wxConfig config("OpenCircuitX");
 
@@ -86,7 +101,14 @@ SettingsDialog::SettingsDialog(wxWindow* parent)
     wxNotebook* nb = new wxNotebook(this, wxID_ANY);
 
     // ---- Tab 1: Simulation ----
-    wxPanel*    simTab   = new wxPanel(nb);
+    // wxScrolledWindow, not wxPanel - the dialog is a fixed, non-resizable
+    // size tuned for Windows' more compact widget metrics. GTK renders the
+    // same content taller and had no way to grow the dialog to fit, so
+    // rows overlapped instead. A scrollbar handles any height mismatch
+    // properly regardless of platform, instead of guessing a fixed pixel
+    // height that happens to work on whichever machine last tested it.
+    wxScrolledWindow* simTab = new wxScrolledWindow(nb);
+    simTab->SetScrollRate(0, 10);
     wxBoxSizer* simSizer = new wxBoxSizer(wxVERTICAL);
     simSizer->AddSpacer(8);
 
@@ -110,13 +132,15 @@ SettingsDialog::SettingsDialog(wxWindow* parent)
         row->Add(m_autoSaveSpinCtrl, 0, wxALIGN_CENTER_VERTICAL);
         simSizer->Add(row, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
     }
-    makeHint(simTab, "How often unsaved editor files are saved automatically (1–30 min).", simSizer);
+    makeHint(simTab, "How often unsaved editor files are saved automatically (1-30 min).", simSizer);
 
     simTab->SetSizer(simSizer);
+    simTab->FitInside();   // computes the scrollable virtual size from simSizer
     nb->AddPage(simTab, "Simulation");
 
     // ---- Tab 2: FPGA ----
-    wxPanel*    fpgaTab   = new wxPanel(nb);
+    wxScrolledWindow* fpgaTab = new wxScrolledWindow(nb);
+    fpgaTab->SetScrollRate(0, 10);
     wxBoxSizer* fpgaSizer = new wxBoxSizer(wxVERTICAL);
     fpgaSizer->AddSpacer(8);
 
@@ -128,14 +152,14 @@ SettingsDialog::SettingsDialog(wxWindow* parent)
     makeRow(fpgaTab, "nextpnr-ice40:",      m_nextpnrPathCtrl,     savedNextpnr,     ID_BrowseNextpnr,     fpgaSizer);
     makeHint(fpgaTab, "Place & route for iCE40 boards (iCEBreaker, TinyFPGA BX, UPduino).", fpgaSizer);
     makeRow(fpgaTab, "icepack:",            m_icepackPathCtrl,     savedIcepack,     ID_BrowseIcepack,     fpgaSizer);
-    makeHint(fpgaTab, "Packs .asc → .bin bitstream (part of Project IceStorm).", fpgaSizer);
+    makeHint(fpgaTab, "Packs .asc -> .bin bitstream (part of Project IceStorm).", fpgaSizer);
 
     fpgaSizer->Add(new wxStaticText(fpgaTab, wxID_ANY, "-- ECP5 --"),
                    0, wxLEFT | wxBOTTOM, 10);
     makeRow(fpgaTab, "nextpnr-ecp5:",       m_nextpnrECP5PathCtrl, savedNextpnrECP5, ID_BrowseNextpnrECP5, fpgaSizer);
     makeHint(fpgaTab, "Place & route for ECP5 boards (ColorLight, OrangeCrab, ULX3S).", fpgaSizer);
     makeRow(fpgaTab, "ecppack:",            m_ecppackPathCtrl,     savedEcppack,     ID_BrowseEcppack,     fpgaSizer);
-    makeHint(fpgaTab, "Packs ECP5 .config → .bit bitstream (part of Project Trellis).", fpgaSizer);
+    makeHint(fpgaTab, "Packs ECP5 .config -> .bit bitstream (part of Project Trellis).", fpgaSizer);
 
     fpgaSizer->Add(new wxStaticText(fpgaTab, wxID_ANY, "-- Common --"),
                    0, wxLEFT | wxBOTTOM, 10);
@@ -165,6 +189,7 @@ SettingsDialog::SettingsDialog(wxWindow* parent)
     }
 
     fpgaTab->SetSizer(fpgaSizer);
+    fpgaTab->FitInside();   // computes the scrollable virtual size from fpgaSizer
     nb->AddPage(fpgaTab, "FPGA");
 
     // ---- Root layout ----
@@ -185,8 +210,16 @@ SettingsDialog::SettingsDialog(wxWindow* parent)
 //--
 static wxString BrowseExe(wxWindow* parent, const wxString& title)
 {
-    wxFileDialog dlg(parent, title, "", "",
-                     "Executables (*.exe)|*.exe|All files (*.*)|*.*",
+    // Only Windows executables carry a .exe extension - on Linux/macOS every
+    // toolchain binary (ghdl, iverilog, yosys, ...) has none, so defaulting
+    // to a *.exe filter there hides every real match.
+#ifdef __WXMSW__
+    wxString wildcard = "Executables (*.exe)|*.exe|All files (*.*)|*.*";
+#else
+    wxString wildcard = "All files (*)|*";
+#endif
+
+    wxFileDialog dlg(parent, title, "", "", wildcard,
                      wxFD_OPEN | wxFD_FILE_MUST_EXIST);
     if (dlg.ShowModal() == wxID_OK)
         return dlg.GetPath();

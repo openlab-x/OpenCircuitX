@@ -1,4 +1,4 @@
-﻿#include "circuit_simulator.h"
+#include "circuit_simulator.h"
 #include <wx/utils.h>
 #include <wx/filename.h>
 
@@ -56,7 +56,7 @@ bool CircuitSimulator::IsGHDLAvailable() const
     if (m_ghdlAvail < 0)
     {
         wxArrayString out, err;
-        m_ghdlAvail = (Execute("\"" + ghdlPath + "\" --version", out, err) == 0) ? 1 : 0;
+        m_ghdlAvail = (Execute("\"" + ghdlPath + "\" --version", out, err, ghdlPath) == 0) ? 1 : 0;
     }
     return m_ghdlAvail == 1;
 }
@@ -66,7 +66,7 @@ bool CircuitSimulator::IsIcarusAvailable() const
     if (m_icarusAvail < 0)
     {
         wxArrayString out, err;
-        m_icarusAvail = (Execute("\"" + icarusPath + "\" -V", out, err) == 0) ? 1 : 0;
+        m_icarusAvail = (Execute("\"" + icarusPath + "\" -V", out, err, icarusPath) == 0) ? 1 : 0;
     }
     return m_icarusAvail == 1;
 }
@@ -76,7 +76,7 @@ bool CircuitSimulator::IsVerilatorAvailable() const
     if (m_verilatorAvail < 0)
     {
         wxArrayString out, err;
-        m_verilatorAvail = (Execute("\"" + verilatorPath + "\" --version", out, err) == 0) ? 1 : 0;
+        m_verilatorAvail = (Execute("\"" + verilatorPath + "\" --version", out, err, verilatorPath) == 0) ? 1 : 0;
     }
     return m_verilatorAvail == 1;
 }
@@ -93,20 +93,78 @@ wxString CircuitSimulator::GHDLWorkdirFlag() const
 
 int CircuitSimulator::Execute(const wxString& cmd,
                                wxArrayString& output,
-                               wxArrayString& errors) const
+                               wxArrayString& errors,
+                               const wxString& toolPath) const
 {
-    if (workDir.IsEmpty())
-        return (int)wxExecute(cmd, output, errors, wxEXEC_SYNC, nullptr);
-
-    wxFileName fnwd(workDir);
-    fnwd.Normalize(wxPATH_NORM_ALL);
-    wxString normalizedCwd = fnwd.GetFullPath();
-    if (!normalizedCwd.IsEmpty() && normalizedCwd.Last() == wxFILE_SEP_PATH)
-        normalizedCwd.RemoveLast();
-
     wxExecuteEnv env;
-    env.cwd = normalizedCwd;
-    return (int)wxExecute(cmd, output, errors, wxEXEC_SYNC, &env);
+    bool needEnv = false;
+
+    if (!workDir.IsEmpty())
+    {
+        wxFileName fnwd(workDir);
+        fnwd.Normalize(wxPATH_NORM_ALL);
+        wxString normalizedCwd = fnwd.GetFullPath();
+        if (!normalizedCwd.IsEmpty() && normalizedCwd.Last() == wxFILE_SEP_PATH)
+            normalizedCwd.RemoveLast();
+        env.cwd = normalizedCwd;
+        needEnv = true;
+    }
+
+    // Some standalone Linux toolchain releases (e.g. GHDL's own tarballs,
+    // which bundle a GNAT Ada runtime) ship their shared libraries in a
+    // lib/ directory next to bin/ and rely on their own launcher script to
+    // put both on the loader's search path. Pointing Settings straight at
+    // bin/ghdl skips that script, so the binary can fail to even start
+    // unless we add lib/ back onto PATH ourselves - same class of bug as
+    // KNOWN_ISSUES #22 (Yosys/libffi), just on the GHDL/Icarus side.
+    if (!toolPath.IsEmpty())
+    {
+        wxString binDir = wxFileName(toolPath).GetPath();
+        wxFileName libFn = wxFileName::DirName(binDir);
+        libFn.RemoveLastDir();
+        libFn.AppendDir("lib");
+        wxString libDir = libFn.GetPath();
+
+        if (!libDir.IsEmpty() && wxDirExists(libDir))
+        {
+            wxGetEnvMap(&env.env);
+
+            wxString existingPath;
+            wxArrayString staleKeys;
+            for (const auto& kv : env.env)
+                if (kv.first.CmpNoCase("PATH") == 0)
+                {
+                    existingPath = kv.second;
+                    staleKeys.Add(kv.first);
+                }
+            for (const wxString& k : staleKeys)
+                env.env.erase(k);
+
+            env.env["PATH"] = libDir + wxPATH_SEP + binDir
+                             + (existingPath.IsEmpty() ? wxString()
+                                                        : wxPATH_SEP + existingPath);
+
+            // On Linux the dynamic loader consults LD_LIBRARY_PATH directly,
+            // not PATH - PATH alone (the Windows/Yosys fix) doesn't help here.
+            wxString existingLdPath;
+            wxArrayString staleLdKeys;
+            for (const auto& kv : env.env)
+                if (kv.first.CmpNoCase("LD_LIBRARY_PATH") == 0)
+                {
+                    existingLdPath = kv.second;
+                    staleLdKeys.Add(kv.first);
+                }
+            for (const wxString& k : staleLdKeys)
+                env.env.erase(k);
+
+            env.env["LD_LIBRARY_PATH"] = libDir
+                                        + (existingLdPath.IsEmpty() ? wxString()
+                                                                     : wxPATH_SEP + existingLdPath);
+            needEnv = true;
+        }
+    }
+
+    return (int)wxExecute(cmd, output, errors, wxEXEC_SYNC, needEnv ? &env : nullptr);
 }
 
 bool CircuitSimulator::CompileHDL(const wxString& filePath,
@@ -145,7 +203,7 @@ bool CircuitSimulator::CompileHDL(const wxString& filePath,
         cmd += " \"" + fp + "\"";
     }
 
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, ghdlPath);
 
     if (exitCode == 0)
         output.Add("Analysis complete.");
@@ -158,7 +216,7 @@ bool CircuitSimulator::ElaborateHDL(const wxString& topEntity,
                                      wxArrayString& errors)
 {
     wxString cmd = "\"" + ghdlPath + "\" -e --std=" + m_vhdlStd + GHDLWorkdirFlag() + " " + topEntity;
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, ghdlPath);
     if (exitCode == 0)
         output.Add("Elaboration complete: " + topEntity);
     return exitCode == 0;
@@ -178,7 +236,7 @@ bool CircuitSimulator::RunHDL(const wxString& topEntity,
     }
     if (!m_stopTime.IsEmpty())
         cmd += " --stop-time=" + m_stopTime;
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, ghdlPath);
     if (exitCode == 0)
     {
         output.Add("Simulation complete: " + topEntity);
@@ -199,14 +257,14 @@ bool CircuitSimulator::RunSimulation(const wxString& filePath,
 
     // Elaborate
     wxString elab = "\"" + ghdlPath + "\" -e --std=" + m_vhdlStd + GHDLWorkdirFlag() + " " + topEntity;
-    if (Execute(elab, output, errors) != 0)
+    if (Execute(elab, output, errors, ghdlPath) != 0)
         return false;
 
     // Run
     wxString run = "\"" + ghdlPath + "\" -r --std=" + m_vhdlStd + GHDLWorkdirFlag() + " " + topEntity;
     if (!m_stopTime.IsEmpty())
         run += " --stop-time=" + m_stopTime;
-    int exitCode = Execute(run, output, errors);
+    int exitCode = Execute(run, output, errors, ghdlPath);
 
     if (exitCode == 0)
         output.Add("Simulation complete: " + topEntity);
@@ -226,7 +284,7 @@ bool CircuitSimulator::RunSimulationWithVCD(const wxString& filePath,
 
     // Elaborate
     wxString elab = "\"" + ghdlPath + "\" -e --std=" + m_vhdlStd + GHDLWorkdirFlag() + " " + topEntity;
-    if (Execute(elab, output, errors) != 0)
+    if (Execute(elab, output, errors, ghdlPath) != 0)
         return false;
 
     // Run with VCD output
@@ -236,7 +294,7 @@ bool CircuitSimulator::RunSimulationWithVCD(const wxString& filePath,
                  + " --vcd=\"" + vp + "\"";
     if (!m_stopTime.IsEmpty())
         run += " --stop-time=" + m_stopTime;
-    int exitCode = Execute(run, output, errors);
+    int exitCode = Execute(run, output, errors, ghdlPath);
 
     if (exitCode == 0)
     {
@@ -268,7 +326,7 @@ bool CircuitSimulator::SyntaxCheckVHDL(const wxString& filePath,
     wxString fp = filePath;
     fp.Replace("\\", "/");
     wxString cmd = "\"" + ghdlPath + "\" -s --std=" + m_vhdlStd + GHDLWorkdirFlag() + " \"" + fp + "\"";
-    int exitCode = Execute(cmd, out, errors);
+    int exitCode = Execute(cmd, out, errors, ghdlPath);
     return exitCode == 0;
 }
 
@@ -304,7 +362,7 @@ bool CircuitSimulator::CompileVerilog(const wxString& filePath,
         cmd += " \"" + filePath + "\"";
     }
 
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, icarusPath);
 
     if (exitCode == 0)
         output.Add("Verilog compilation successful: " + outFile);
@@ -316,7 +374,9 @@ bool CircuitSimulator::RunVVP(const wxString& vvpPath,
                                wxArrayString& output,
                                wxArrayString& errors)
 {
-    int exitCode = Execute("vvp \"" + vvpPath + "\"", output, errors);
+    // vvp ships alongside iverilog in the same bin/ - derive lib/ from
+    // icarusPath even though the literal command run here is "vvp".
+    int exitCode = Execute("vvp \"" + vvpPath + "\"", output, errors, icarusPath);
     if (exitCode == 0)
         output.Add("Verilog simulation complete.");
     return exitCode == 0;
@@ -334,7 +394,7 @@ bool CircuitSimulator::RunVerilog(const wxString& filePath,
 
     // vvp <file.vvp>
     wxString cmd = "vvp \"" + vvpFile + "\"";
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, icarusPath);
 
     if (exitCode == 0)
         output.Add("Verilog simulation complete.");
@@ -356,7 +416,7 @@ bool CircuitSimulator::LintVerilator(const wxString& filePath,
     }
 
     wxString cmd = "\"" + verilatorPath + "\" --lint-only -Wall \"" + filePath + "\"";
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, verilatorPath);
 
     if (exitCode == 0)
         output.Add("Verilator lint passed: " + wxFileName(filePath).GetFullName());
@@ -382,7 +442,7 @@ bool CircuitSimulator::RunVerilator(const wxString& filePath,
     wxString buildCmd = "\"" + verilatorPath + "\" --binary -j 0"
                         + " --Mdir \"" + objDir + "\""
                         + " \"" + filePath + "\"";
-    int exitCode = Execute(buildCmd, output, errors);
+    int exitCode = Execute(buildCmd, output, errors, verilatorPath);
 
     if (exitCode != 0)
     {
@@ -392,7 +452,8 @@ bool CircuitSimulator::RunVerilator(const wxString& filePath,
 
     output.Add("Verilator build succeeded. Running simulation...");
 
-    // Run the generated executable
+    // Run the generated executable (our own build output, not verilatorPath
+    // itself - no lib/ derivation needed here).
     int runCode = Execute("\"" + exeName + "\"", output, errors);
 
     if (runCode == 0)

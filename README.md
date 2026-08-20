@@ -6,7 +6,7 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-17-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Version](https://img.shields.io/badge/Version-1.0.0-gray)
+![Version](https://img.shields.io/badge/Version-1.1.0-gray)
 ![GUI](https://img.shields.io/badge/GUI-wxWidgets%203.2-blueviolet)
 
 </div>
@@ -19,9 +19,13 @@ See [Why OpenCircuitX?](#why-opencircuitx) below for how it compares to Active-H
 
 ## Download
 
-- [x] **Windows 10/11 (x64)** - [Download the latest installer](https://github.com/openlab-x/OpenCircuitX/releases/latest/download/OpenCircuitX-Setup.exe). That link always points at the newest release; see [Requirements](#requirements) for details.
-- [ ] **Linux** - no pre-built package yet, an AppImage is planned. [Build from source](#building) for now.
-- [ ] **macOS** - no pre-built package yet, a DMG is planned. [Build from source](#building) for now.
+| Platform | Status | Get it |
+|---|---|---|
+| Windows 10/11 (x64) | Available | [Download the latest installer](https://github.com/openlab-x/OpenCircuitX/releases/latest/download/OpenCircuitX-Setup.exe) |
+| Linux | No pre-built package yet, an AppImage is planned | [Build from source](#building) |
+| macOS | No pre-built package yet, a DMG is planned | [Build from source](#building) |
+
+The Windows link always points at the newest release; see [Requirements](#requirements) for details. Want a specific older version instead - to test something, or compare behavior across releases? Every past release stays up on the [Releases page](https://github.com/openlab-x/OpenCircuitX/releases), each with its own versioned installer.
 
 ## Table of Contents
 
@@ -258,12 +262,14 @@ See the [documentation site](docs/index.html) for a full walkthrough with more s
 
 ## Try It Yourself
 
-The screenshots above are all the same example project: [`examples/gate_demo`](examples/gate_demo), a small 2-input, 7-gate VHDL design (AND/OR/XOR/NAND/NOR/XNOR/NOT) with a matching testbench. It's included in this repository so you can open the exact same project and reproduce every screenshot yourself:
+The screenshots above are all the same example project: [`examples/ghdl/gate_demo`](examples/ghdl/gate_demo), a small 2-input, 7-gate VHDL design (AND/OR/XOR/NAND/NOR/XNOR/NOT) with a matching testbench. It's included in this repository so you can open the exact same project and reproduce every screenshot yourself:
 
 1. Clone or download this repository.
-2. In OpenCircuitX, **Open Project** and select `examples/gate_demo/gate_demo.ocxproj`.
+2. In OpenCircuitX, **Open Project** and select `examples/ghdl/gate_demo/gate_demo.ocxproj`.
 3. Open `gate_demo.vhd` in the HDL Editor, or press **F6** to run the testbench and jump straight to the Waveform Viewer.
 4. Switch to the **RTL View** tab to see the gate-level schematic, or **Circuit Canvas** to build the same logic by hand.
+
+[`examples/`](examples) also has an Icarus Verilog project and a Yosys synthesis project, one per supported toolchain.
 
 ---
 
@@ -272,8 +278,8 @@ The screenshots above are all the same example project: [`examples/gate_demo`](e
 | Platform | Requirement |
 |---|---|
 | Windows 10/11 | Visual Studio 2022 (v143), wxWidgets 3.2.10 |
-| Linux | GCC/Clang, CMake 3.20+, wxWidgets 3.x dev package |
-| macOS | Clang, CMake 3.20+, wxWidgets 3.x (Homebrew) |
+| Linux | GCC/Clang, CMake 3.20+, wxWidgets 3.x dev package, libcurl dev package |
+| macOS | Clang, CMake 3.20+, wxWidgets 3.x (Homebrew), curl (Homebrew) |
 
 Simulation backends (optional - set paths in Tools > Settings):
 
@@ -287,8 +293,10 @@ Simulation backends (optional - set paths in Tools > Settings):
 | [nextpnr-ecp5](https://github.com/YosysHQ/nextpnr) | ECP5 place & route |
 | icepack (bundled with [Project IceStorm](https://clifford.at/icestorm)) | iCE40 bitstream packing |
 | ecppack (bundled with [Project Trellis](https://github.com/YosysHQ/prjtrellis)) | ECP5 bitstream packing |
-| [openFPGALoader](https://github.com/trabucayre/openFPGALoader) | Board programming (USB) |
+| [openFPGALoader](https://github.com/trabucayre/openFPGALoader/releases) | Board programming (USB) |
 | [ghdl-yosys-plugin](https://github.com/ghdl/ghdl-yosys-plugin) | VHDL → Yosys bridge (for FPGA synthesis) |
+
+**Shortcut:** [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build/releases) bundles Icarus Verilog, Yosys, both nextpnr variants, icepack, and ecppack together in one download (Windows/Linux/macOS, x64 and arm64) - six rows of the table above in a single archive. Point Tools > Settings at the executables inside its `bin/` folder instead of installing each tool separately. This is what was actually used to verify the Linux build.
 
 All of these are covered in more detail in [GHDL Setup](#ghdl-setup) and [FPGA Toolchain Setup](#fpga-toolchain-setup) below.
 
@@ -296,13 +304,16 @@ All of these are covered in more detail in [GHDL Setup](#ghdl-setup) and [FPGA T
 
 ## Tested On
 
-**Actually tested:** Windows 11 (x64), Visual Studio 2022, wxWidgets 3.2.10. The HDL editor, Circuit Canvas, waveform viewer, and simulation backends (GHDL, Icarus Verilog, Verilator) have all been exercised on this setup.
+| Platform | Status | Toolchain | What's been verified |
+|---|---|---|---|
+| Windows 11 (x64) | Tested | Visual Studio 2022, wxWidgets 3.2.10 | HDL editor, Circuit Canvas, waveform viewer, GHDL, Icarus Verilog, Verilator |
+| Ubuntu 26.04 (x64) | Tested | GCC/CMake, wxWidgets 3.2.9 | GHDL (mcode backend, see note below), Icarus Verilog, Yosys - run end-to-end through the app itself, not just compiled |
+| macOS | Not yet tested | CMake build targets it | Hasn't been run end-to-end |
+| Real FPGA hardware | Not yet tested | Yosys, nextpnr, icepack/ecppack run without errors | No board has actually been programmed - none purchased yet, so real-hardware behavior is unverified |
 
-**Not yet tested:**
-- Linux and macOS builds. The CMake build targets both, but hasn't been run end-to-end on either platform yet.
-- Programming real FPGA hardware. Synthesis and bitstream generation (Yosys, nextpnr, icepack/ecppack) work, but no board listed under FPGA Toolchain has actually been programmed and verified, none of that hardware has been purchased yet.
+**Note on GHDL's Linux backend:** GHDL ships two backend builds. Use the **mcode** backend, not the **gcc** backend - the gcc backend additionally requires the system's matching GNAT/GCC runtime to be installed separately, while mcode is fully self-contained.
 
-If you try either of these and run into something, please open an issue, that feedback is genuinely useful.
+If you try either of these and it works (or doesn't), please open an issue either way - even a one-line "built and ran fine on macOS 15" is exactly the kind of report that gets this table updated with real, credited confirmation, the same way the Linux row above went from "not tested" to verified.
 
 ---
 
@@ -334,28 +345,36 @@ Restart Visual Studio after setting this.
 
 Open `OpenCircuitX.sln`, select `x64 | Release`, build.
 
+**4. Run**
+
+Press `Ctrl+F5` in Visual Studio, or run the built exe directly: `x64\Release\OpenCircuitX.exe`.
+
 ---
 
 ### Linux
 
 ```bash
-sudo apt install libwxgtk3.2-dev   # Debian/Ubuntu
+sudo apt install libwxgtk3.2-dev libcurl4-openssl-dev   # Debian/Ubuntu
 # or
-sudo dnf install wxGTK-devel       # Fedora
+sudo dnf install wxGTK-devel libcurl-devel              # Fedora
 
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
+./OpenCircuitX
 ```
+
+wxWidgets package name varies by distro version - if `libwxgtk3.2-dev` isn't found, run `apt search libwxgtk` and use whatever `-dev` package it lists.
 
 ### macOS
 
 ```bash
-brew install wxwidgets
+brew install wxwidgets curl
 
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(sysctl -n hw.ncpu)
+open OpenCircuitX.app
 ```
 
 ---
@@ -394,14 +413,14 @@ The app has its own searchable shortcuts dialog (Help > Keyboard Shortcuts, or `
 
 ```ini
 [OpenCircuitX]
-Version=1.0.0
+Version=1.0
 ProjectName=counter
 Author=
 License=MIT
 
 [Language]
 Primary=VHDL
-VHDLStandard=2008
+VHDLStandard=08
 
 [Files]
 Count=2

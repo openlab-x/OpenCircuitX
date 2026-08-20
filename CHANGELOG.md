@@ -2,7 +2,47 @@
 
 ---
 
-## [1.0.0]
+## [1.1.0] - 2026-08-20
+
+Linux and macOS builds work for the first time, and the Verilog simulation workflow now behaves the same way the VHDL one always did.
+
+### Added
+
+- Linux and macOS support. The update checker previously included Windows-only headers unconditionally, so the project could not be compiled on either platform. Non-Windows builds now fetch the remote version through libcurl, with the response bounded to the size of the receiving buffer. **libcurl is now a build dependency on Linux and macOS.** Thanks to @dylanbautista for the original patch, and to @johnblommers and @jamescraigziegler for confirming the failure independently on Ubuntu. (#1, #2, #3)
+- Generated Verilog testbenches now include a `$dumpfile`/`$dumpvars` block, so an Icarus run actually produces a waveform. Icarus has no equivalent of GHDL's `--vcd` flag, so without those calls no VCD is written at all.
+- RTL View now explains itself when it cannot render a file, instead of showing an empty panel. It parses VHDL only; a Verilog file previously produced a blank view with no message.
+- A Verilog run that produces no VCD now prints the exact lines to add to a hand-written testbench.
+
+### Fixed
+
+- CMake now guards the curl dependency with `NOT WIN32` instead of `APPLE OR LINUX`, which was never true on CMake versions before 3.25.
+- RTL View now refreshes when you switch to its tab. A stale tab index meant the refresh fired on the Circuit Canvas tab instead, leaving RTL View showing whatever it last had, or nothing at all.
+- Saving a non-VHDL file now updates RTL View too, so it can explain why it can't render the file rather than staying blank.
+- The Settings dialog's Simulation and FPGA tabs now scroll instead of overlapping their own rows on Linux. The dialog is a fixed size tuned for Windows' more compact widget metrics; GTK renders the same content taller and had nowhere to put the overflow.
+- The app window now has a real icon on Linux (dock, taskbar, window decoration, app search) instead of a blank/generic one. It was only ever loaded via a Windows-only resource mechanism, with no fallback for platforms that don't have it. Ships as a PNG on Linux/macOS rather than the Windows `.ico`, matching the actual Linux/freedesktop icon-theme standard.
+- GHDL, Icarus, and Verilator no longer fail to launch on Linux when pointed at a standalone release that bundles its own runtime libraries in a `lib/` folder next to `bin/` (same class of fix already applied to Yosys). Note: GHDL specifically ships two backend variants on Linux - use the **mcode** backend, not **gcc backend**, which additionally requires the system's matching GNAT/GCC runtime to already be installed via `apt` and isn't fixed by this change.
+- The README's build instructions for all three platforms ended after compiling, with no instruction to actually run the result. Added a "Run" step to each, and pointed the Simulation backends table at OSS CAD Suite, which bundles Icarus, Yosys, both nextpnr variants, icepack, and ecppack in one download - the actual tool used to verify the Linux build this release. Also fixed the openFPGALoader link, which pointed at the repo root instead of its releases page like every other tool in that table.
+- The README's Linux and macOS build instructions were missing `libcurl`, now a required build dependency since Linux/macOS support was added earlier in this same release - following the old instructions exactly would fail at the `cmake` step. Also updated "Tested On" to reflect that Linux has now actually been run end-to-end, not just compiled.
+- Fixed a crash on first launch of the HDL Editor on Linux (GTK), caused by a colour value that's valid to pass on Windows but not on GTK.
+- Browsing for a toolchain executable in Settings on Linux/macOS no longer defaults to a filter that hides every real match. The `*.exe` filter is Windows-only now; other platforms default straight to "All files".
+- The About dialog's "Powered by" line no longer shows garbled middle dots ("Â·") on Windows - same root cause as the Settings dialog hints below: the string literal was decoded through the system codepage instead of UTF-8. Replaced with plain ASCII.
+- The About dialog's heart symbol now shows on Windows too, not just Linux. It was a supplementary-plane emoji that needs a colour-emoji font Windows doesn't reliably provide for static text; replaced with a plain heart symbol in the same orange.
+- "Powered by" now also credits Icarus and Yosys alongside GHDL, which were missing despite being equally core to the app's simulation and synthesis features.
+- The Waveform Viewer's ΔT cursor-delta label no longer risks the same garbled-text issue as the About dialog fixes above (found by sweeping for the same pattern, not by anyone seeing it broken).
+- The Settings dialog no longer shows garbled text in three hints. Real arrow and en-dash characters were corrupted at runtime because string literals get decoded through the system codepage, not UTF-8; replaced with plain ASCII.
+- RTL View's message on a Verilog file no longer suggests running FPGA synthesis as a way to see something here - it doesn't read synthesis output, so that advice led nowhere.
+- The FPGA synthesis resource report ("No synthesis statistics available.") now actually populates. The parser expected the cell count to follow the cell name; real Yosys output puts the count first, so every resource line silently failed to parse before.
+- Yosys (and nextpnr, icepack/ecppack, openFPGALoader) no longer fail with a `.dll was not found` error, or a misleading "not found" message, when Settings points directly at an OSS CAD Suite `bin\` executable rather than launching through the suite's own environment script. The tool's `lib\` directory is now added to its PATH automatically.
+- Run Simulation on a Verilog file now compiles the whole project, not just the file in the active tab. Running a testbench previously failed with `Unknown module type` unless Build had been pressed first in the same session.
+- The same source file listed twice in a project, differing only in path separators, is no longer passed to the compiler twice. This produced a duplicate module declaration in Verilog and re-declared design units in VHDL.
+- The Waveform Viewer now opens automatically after a Verilog simulation, the same way it already did for VHDL. The Verilog path previously finished without ever loading the waveform.
+- Generated Verilog testbenches now wire up their ports when the module declares them on a single line, for example `module and_gate(input a, input b, output y);`. Previously the port list was dropped, producing a testbench with no signals and an empty instantiation that ran but left every input floating.
+- Corrected a duplicated word in the Run Config bar's "Stop Time" tooltip.
+- Corrected a misspelling in the Circuit Canvas "Record VCD" button tooltip.
+
+---
+
+## [1.0.0] - 2026-07-21
 
 First release. Digital Design is fully supported; Analog and Mixed-Signal are planned for future major versions.
 

@@ -193,9 +193,26 @@ MainWindow::MainWindow(const wxString& title)
         else                      OCXTheme::Set(OCXThemeId::Dark);
     }
 
-    //** App icon (embedded via OpenCircuitX.rc → res/app.ico) **//
+    //** App icon **//
+    // Windows: embedded via OpenCircuitX.rc, loaded by resource name - no
+    // file on disk needed. Linux/macOS have no such resource mechanism, so
+    // res/app.png has to be loaded as a plain file instead, resolved next
+    // to the actual running executable (CMake copies it there at build
+    // time - see CMakeLists.txt) rather than assumed relative to cwd. PNG,
+    // not ICO: gdk-pixbuf (what GNOME's dock/app search use to render a
+    // .desktop file's Icon=) doesn't reliably decode this project's .ico,
+    // even though wx's own in-app ICO handler can load it fine - two
+    // separate decoders, confirmed by testing both on a real GNOME desktop.
 #ifdef __WXMSW__
     SetIcon(wxIcon("IDI_MAIN", wxBITMAP_TYPE_ICO_RESOURCE));
+#else
+    {
+        wxFileName exeDir(wxStandardPaths::Get().GetExecutablePath());
+        wxString iconPath = exeDir.GetPath() + wxFILE_SEP_PATH + "app.png";
+        wxIcon icon;
+        if (wxFileExists(iconPath) && icon.LoadFile(iconPath, wxBITMAP_TYPE_PNG) && icon.IsOk())
+            SetIcon(icon);
+    }
 #endif
 
     //** Menu bar **//
@@ -580,11 +597,14 @@ MainWindow::MainWindow(const wxString& title)
     // Live VHDL syntax check on every explicit save
     logicEditor->SetSaveCallback([this](const wxString& filePath, const wxString& ext)
     {
+        // Refresh RTL view (no external tools needed). Runs for every language,
+        // not just VHDL - a Verilog file needs to reach ParseAndShow so the panel
+        // can say why it can't render it instead of sitting blank.
+        rtlViewPanel->ParseAndShow(logicEditor->GetCode(),
+                                   logicEditor->GetCurrentFilePath());
+
         if (ext != "vhd" && ext != "vhdl")
             return;
-
-        // Refresh RTL view (no external tools needed)
-        rtlViewPanel->ParseAndShow(logicEditor->GetCode());
 
         if (!circuitSimulator->IsGHDLAvailable())
             return;
@@ -728,11 +748,17 @@ MainWindow::MainWindow(const wxString& title)
     workspaceNotebook->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED,
         [this](wxBookCtrlEvent& e)
         {
-            if (e.GetSelection() == 3)
+            // Compare the page itself, not a hard-coded index - the index was
+            // stale after Waveform was inserted ahead of RTL View, so the
+            // refresh fired on the Circuit Canvas tab instead.
+            int sel = e.GetSelection();
+            if (sel >= 0 && sel < (int)workspaceNotebook->GetPageCount()
+                && workspaceNotebook->GetPage(sel) == rtlViewPanel)
             {
                 wxString code = logicEditor->GetCode();
                 if (!code.IsEmpty())
-                    rtlViewPanel->ParseAndShow(code);
+                    rtlViewPanel->ParseAndShow(code,
+                                               logicEditor->GetCurrentFilePath());
                 else
                     rtlViewPanel->Clear();
             }
@@ -788,7 +814,7 @@ MainWindow::MainWindow(const wxString& title)
         m_stopTimeField->SetBackgroundColour(OCXTheme::BgEditor());
         m_stopTimeField->SetForegroundColour(OCXTheme::FgText());
         m_stopTimeField->SetHint("e.g. 500ns");
-        m_stopTimeField->SetToolTip("Simulation stop time time passed to GHDL --stop-time=");
+        m_stopTimeField->SetToolTip("Simulation stop time passed to GHDL --stop-time=");
 
         const wxString stds[] = { "08", "93", "19" };
         m_vhdlStdChoice = new wxChoice(m_runConfigBar, wxID_ANY,

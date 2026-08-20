@@ -10,8 +10,8 @@ IDI_MAIN ICON "res\\app.ico"
 
 // Version information embedded in the executable
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION     1,0,0,0
-PRODUCTVERSION  1,0,0,0
+FILEVERSION     1,1,0,0
+PRODUCTVERSION  1,1,0,0
 FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
 FILEFLAGS       0x0L
 FILEOS          VOS__WINDOWS32
@@ -24,12 +24,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName",      "OpenLabX"
             VALUE "FileDescription",  "OpenCircuitX, Circuit & HDL Development IDE"
-            VALUE "FileVersion",      "1.0.0.0"
+            VALUE "FileVersion",      "1.1.0.0"
             VALUE "InternalName",     "OpenCircuitX"
             VALUE "LegalCopyright",   "Copyright (c) 2026 OpenLabX. MIT License."
             VALUE "OriginalFilename", "OpenCircuitX.exe"
             VALUE "ProductName",      "OpenCircuitX"
-            VALUE "ProductVersion",   "1.0.0.0"
+            VALUE "ProductVersion",   "1.1.0.0"
         END
     END
     BLOCK "VarFileInfo"

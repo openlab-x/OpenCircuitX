@@ -36,13 +36,21 @@ installer/*.exe
 # code - build it separately per README and point WXWIN at it, never commit it)
 pack/
 
-# Internal-only planning notes (roadmap, known-issue seeding strategy, etc.) -
-# not meant to be public
+# For local development
 localdev/
-PLAN.md
 
 # Documentation site - deployed to the website separately, not via this repo
 docs/
+
+# Regenerable output from running the examples/ projects (simulation and
+# synthesis artifacts - the .v/.vhd sources and .ocxproj files stay tracked)
+examples/**/*.vcd
+examples/**/*.vvp
+examples/**/*.json
+examples/**/*.ghw
+examples/**/*.cf
+examples/**/*.o
+examples/**/work/
 
 # OS cruft
 .DS_Store

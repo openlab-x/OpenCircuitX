@@ -40,22 +40,53 @@ AboutDialog::AboutDialog(wxWindow* parent)
     wxStaticLine* line1 = new wxStaticLine(this, wxID_ANY);
 
     // Powered by
+    // Middle dot via wxString::FromUTF8 with explicit UTF-8 bytes, not a
+    // \uXXXX escape in a narrow literal - the escape's byte encoding
+    // depends on the compiler's execution charset (CP1252 here), and wx's
+    // runtime decode assumes UTF-8, producing mojibake either way the two
+    // disagree. List widened from "wxWidgets \u00B7 GHDL \u00B7 C++" to also credit
+    // Icarus (Verilog simulation, equally core to GHDL/VHDL) and Yosys
+    // (the whole FPGA synthesis feature) - both were real, load-bearing
+    // dependencies missing from the credit line entirely.
     wxStaticText* poweredBy = new wxStaticText(
         this, wxID_ANY,
-        "Powered by wxWidgets \u00B7 GHDL \u00B7 C++",
+        wxString::FromUTF8("Powered by wxWidgets \xC2\xB7 GHDL \xC2\xB7 Icarus \xC2\xB7 Yosys \xC2\xB7 C++"),
         wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
     poweredBy->SetForegroundColour(OCXTheme::FgDim());
     poweredBy->SetBackgroundColour(OCXTheme::BgPanel());
 
-    // Made with love
-    wxStaticText* madeBy = new wxStaticText(
-        this, wxID_ANY,
-        wxString("Made with ") + wxString::FromUTF8("\xF0\x9F\xA7\xA1") + " by OpenLabX",
-        wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
-    madeBy->SetFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
-                           wxFONTWEIGHT_BOLD));
-    madeBy->SetForegroundColour(OCXTheme::FgText());
-    madeBy->SetBackgroundColour(OCXTheme::BgPanel());
+    // Made with <3 - three adjacent controls, not one string, so the heart
+    // can have its own colour. The original used the orange heart emoji
+    // (U+1F9E1), a supplementary-plane codepoint that needs a colour-emoji
+    // font to render - GTK/fontconfig on Linux reliably falls back to one,
+    // classic Windows static-text rendering doesn't, so it just showed
+    // nothing there. Plain "hearts suit" (U+2665) needs no emoji font at
+    // all. Coloured with a literal orange, not OCXTheme::Accent() - that's
+    // actually blue in every theme variant (VS Code-style accent), not
+    // orange, so reusing it would have quietly swapped the heart's colour
+    // instead of fixing it. No orange exists anywhere in OCXTheme to reuse.
+    wxBoxSizer* madeBySizer = new wxBoxSizer(wxHORIZONTAL);
+    wxFont      madeByFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
+    const wxColour kHeartOrange(244, 144, 12);
+
+    wxStaticText* madeByPre = new wxStaticText(this, wxID_ANY, "Made with ");
+    madeByPre->SetFont(madeByFont);
+    madeByPre->SetForegroundColour(OCXTheme::FgText());
+    madeByPre->SetBackgroundColour(OCXTheme::BgPanel());
+
+    wxStaticText* madeByHeart = new wxStaticText(this, wxID_ANY, wxString::FromUTF8("\xE2\x99\xA5"));
+    madeByHeart->SetFont(madeByFont);
+    madeByHeart->SetForegroundColour(kHeartOrange);
+    madeByHeart->SetBackgroundColour(OCXTheme::BgPanel());
+
+    wxStaticText* madeByPost = new wxStaticText(this, wxID_ANY, " by OpenLabX");
+    madeByPost->SetFont(madeByFont);
+    madeByPost->SetForegroundColour(OCXTheme::FgText());
+    madeByPost->SetBackgroundColour(OCXTheme::BgPanel());
+
+    madeBySizer->Add(madeByPre,   0, wxALIGN_CENTER_VERTICAL);
+    madeBySizer->Add(madeByHeart, 0, wxALIGN_CENTER_VERTICAL);
+    madeBySizer->Add(madeByPost,  0, wxALIGN_CENTER_VERTICAL);
 
     // License
     wxStaticText* license = new wxStaticText(
@@ -82,9 +113,9 @@ AboutDialog::AboutDialog(wxWindow* parent)
     root->AddSpacer(14);
     root->Add(line1,     0, wxEXPAND | wxLEFT | wxRIGHT, 20);
     root->AddSpacer(12);
-    root->Add(poweredBy, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 20);
+    root->Add(poweredBy,  0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 20);
     root->AddSpacer(8);
-    root->Add(madeBy,    0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 20);
+    root->Add(madeBySizer, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 20);
     root->AddSpacer(8);
     root->Add(license,   0, wxALIGN_CENTER | wxLEFT | wxRIGHT, 20);
     root->AddSpacer(14);

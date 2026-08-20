@@ -12,7 +12,7 @@
 ;---------------------------------------------------------------------------
 
 !define APP_NAME        "OpenCircuitX"
-!define APP_VERSION     "1.0.0"
+!define APP_VERSION     "1.1.0"
 !define APP_PUBLISHER   "OpenLabX"
 !define APP_URL         "https://openLabX.com"
 !define APP_EXE         "OpenCircuitX.exe"

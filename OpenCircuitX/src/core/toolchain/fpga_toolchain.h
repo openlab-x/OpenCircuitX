@@ -131,9 +131,14 @@ private:
     wxString      m_ghdlPluginPath;
     wxArrayString m_projectFiles;
 
+    // toolPath: full path to the executable being run (yosys/nextpnr/icepack/
+    // loader). If its sibling lib/ directory exists (as it does in every OSS
+    // CAD Suite install), it's added to the child process's PATH so the tool
+    // can find its own runtime DLLs even when only bin/ is configured.
     int Execute(const wxString& cmd,
                 wxArrayString& output,
-                wxArrayString& errors) const;
+                wxArrayString& errors,
+                const wxString& toolPath = wxEmptyString) const;
 
     static SynthReport ParseYosysReport(const wxArrayString& lines);
 };

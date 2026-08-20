@@ -17,9 +17,10 @@ static bool ParseVerilogModule(const wxString& src,
                                 std::vector<VerilogPort>& ports)
 {
     wxArrayString lines = wxStringTokenize(src, "\n");
-    bool inModule = false;
-    bool inPorts  = false;
-    int  depth    = 0;
+    bool inModule  = false;
+    bool inPorts   = false;
+    bool portsDone = false;
+    int  depth     = 0;
     wxString portBlock;
 
     for (const wxString& rawLine : lines)
@@ -55,9 +56,26 @@ static bool ParseVerilogModule(const wxString& src,
                     if (ch == '(') { ++depth; inPorts = true; }
                     else if (ch == ')') --depth;
                 }
-                if (inPorts && depth > 0)
-                    portBlock = line.Mid(line.Find('(') + 1);
+                if (inPorts)
+                {
+                    int op = line.Find('(');
+                    if (depth > 0)
+                    {
+                        // Port list continues on following lines
+                        portBlock = line.Mid(op + 1);
+                    }
+                    else
+                    {
+                        // Whole port list opens and closes on the module line,
+                        // e.g.  module and_gate(input a, input b, output y);
+                        int cp = line.Find(')', true);
+                        if (cp > op)
+                            portBlock = line.Mid(op + 1, cp - op - 1);
+                        portsDone = true;
+                    }
+                }
             }
+            if (portsDone) break;
             continue;
         }
 
@@ -268,6 +286,14 @@ void MainWindow::OnGenTestbench(wxCommandEvent&)
             if (p.dir != "output")
                 tb += "        " + p.name + " = 0;\n";
         }
+        tb += "    end\n\n";
+
+        // Waveform dump - Icarus has no --vcd flag, so the testbench has to ask
+        // for the waveform itself. The name matches what Run Simulation looks for.
+        tb += "    // Waveform output - required for the Waveform tab to load anything\n";
+        tb += "    initial begin\n";
+        tb += "        $dumpfile(\"tb_" + modName + ".vcd\");\n";
+        tb += "        $dumpvars(0, tb_" + modName + ");\n";
         tb += "    end\n\n";
 
         // DUT instantiation

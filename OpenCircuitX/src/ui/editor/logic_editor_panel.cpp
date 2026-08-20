@@ -138,7 +138,14 @@ void LogicEditorPanel::ApplyBaseStyles(wxStyledTextCtrl* editor)
 
     //** Selection **//
     editor->SetSelBackground(true, OCXTheme::BgSelection());
-    editor->SetSelForeground(false, wxNullColour);
+    // false = don't override selected text's own syntax-highlight colour;
+    // the colour argument is meant to be ignored in that case, but GTK's
+    // SetSelForeground reads it unconditionally instead of checking the
+    // flag first, so wxNullColour (deliberately IsOk()==false) crashes
+    // there. Windows' implementation checks the flag first and never hits
+    // this. Passing a real colour keeps both platforms safe; it's simply
+    // unused on Windows and a sane fallback if GTK ever does apply it.
+    editor->SetSelForeground(false, OCXTheme::FgText());
 
     //** Edge / whitespace **//
     editor->SetEdgeColour(OCXTheme::BgSash());

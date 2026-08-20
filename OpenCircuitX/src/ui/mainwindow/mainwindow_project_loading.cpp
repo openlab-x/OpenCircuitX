@@ -103,6 +103,15 @@ wxArrayString MainWindow::CollectProjectVHDLFiles() const
             wxString ext = wxFileName(f).GetExt().Lower();
             if ((ext == "vhd" || ext == "vhdl") && wxFileExists(f))
             {
+                // Same path can appear twice with different separators, and
+                // analyzing a VHDL file twice re-declares its design units.
+                bool seen = false;
+                for (size_t j = 0; j < sources.GetCount() && !seen; ++j)
+                    seen = sources[j].IsSameAs(f, false);
+                for (size_t j = 0; j < testbenches.GetCount() && !seen; ++j)
+                    seen = testbenches[j].IsSameAs(f, false);
+                if (seen) continue;
+
                 if (IsTestbenchName(f))
                     testbenches.Add(f);
                 else
@@ -155,6 +164,24 @@ wxArrayString MainWindow::CollectProjectVerilogFiles() const
     if (currentProjectDirectory.IsEmpty())
         return files;
 
+    // A project file can list the same path twice with different separators
+    // (e.g. "dir\name.v" and "dir/name.v"), so compare normalized paths
+    // rather than raw strings - handing iverilog the same file twice fails
+    // with a duplicate module declaration.
+    auto addUnique = [this, &files](const wxString& path)
+    {
+        wxFileName fn(path);
+        fn.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_ABSOLUTE,
+                     currentProjectDirectory);
+        wxString norm = fn.GetFullPath();
+        if (norm.IsEmpty()) norm = path;
+
+        for (size_t i = 0; i < files.GetCount(); ++i)
+            if (files[i].IsSameAs(norm, false))   // case-insensitive: Windows
+                return;
+        files.Add(norm);
+    };
+
     // sourceFiles list first (preserves user order)
     if (!currentProject.sourceFiles.IsEmpty())
     {
@@ -162,10 +189,10 @@ wxArrayString MainWindow::CollectProjectVerilogFiles() const
         {
             wxString f = currentProject.sourceFiles[i];
             if (wxFileName(f).IsRelative())
-                f = currentProjectDirectory + "/" + f;
+                f = currentProjectDirectory + wxFILE_SEP_PATH + f;
             wxString ext = wxFileName(f).GetExt().Lower();
             if ((ext == "v" || ext == "sv") && wxFileExists(f))
-                files.Add(f);
+                addUnique(f);
         }
         if (!files.IsEmpty())
             return files;
@@ -182,7 +209,7 @@ wxArrayString MainWindow::CollectProjectVerilogFiles() const
     {
         wxString ext = wxFileName(filename).GetExt().Lower();
         if (ext == "v" || ext == "sv")
-            files.Add(currentProjectDirectory + "/" + filename);
+            addUnique(currentProjectDirectory + wxFILE_SEP_PATH + filename);
         cont = dir.GetNext(&filename);
     }
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(OpenCircuitX VERSION 1.0.0 LANGUAGES CXX)
+project(OpenCircuitX VERSION 1.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -121,6 +121,21 @@ elseif(APPLE)
 else()
     # Linux
     add_executable(OpenCircuitX ${OCX_SOURCES})
+endif()
+
+# Windows embeds the icon into the .exe via OpenCircuitX.rc above - nothing
+# else needed there. Linux/macOS have no such resource mechanism, so
+# mainwindow.cpp loads res/app.png as a plain file at runtime, looked up
+# next to the actual executable. PNG, not ICO: gdk-pixbuf (what GNOME's
+# app search/dock use to render a .desktop file's Icon=) doesn't reliably
+# decode this project's .ico, even though wx's own in-app ICO handler can -
+# two separate decoders, found the hard way testing on a real GNOME desktop.
+# Copy the PNG there after every build.
+if(NOT WIN32)
+    add_custom_command(TARGET OpenCircuitX POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/OpenCircuitX/res/app.png"
+                "$<TARGET_FILE_DIR:OpenCircuitX>/app.png")
 endif()
 
 # ---------------------------------------------------------------------------

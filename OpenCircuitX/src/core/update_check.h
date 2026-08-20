@@ -5,7 +5,7 @@
 
 // Stable URL - always resolves to the newest GitHub release's installer,
 // regardless of version. Requires every release to also upload a copy of
-// the installer under this exact filename (see localdev/ROADMAP.md).
+// the installer under this exact filename.
 extern const char* const OCX_LATEST_DOWNLOAD_URL;
 
 wxString OCXFetchRemoteVersion();

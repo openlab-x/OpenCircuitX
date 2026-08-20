@@ -169,7 +169,7 @@ CanvasActionPanel::CanvasActionPanel(wxWindow* parent,
                                wxDefaultPosition, wxSize(144, 28));
     m_btnRecord->SetBackgroundColour(wxColour(140, 30, 30));
     m_btnRecord->SetForegroundColour(OCXTheme::FgText());
-    m_btnRecord->SetToolTip("Record annimation output signals as a .vcd waveform (max 200 ticks).\nAuto-loads in the Waveform tab when done.");
+    m_btnRecord->SetToolTip("Record animation output signals as a .vcd waveform (max 200 ticks).\nAuto-loads in the Waveform tab when done.");
     sizer->Add(m_btnRecord, 0, wxLEFT | wxBOTTOM, 6);
 
     // ---- Edit --------------------------------------------------------------

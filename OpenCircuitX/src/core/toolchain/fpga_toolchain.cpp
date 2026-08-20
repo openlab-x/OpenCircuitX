@@ -2,6 +2,7 @@
 #include <wx/utils.h>
 #include <wx/filename.h>
 #include <wx/file.h>
+#include <wx/tokenzr.h>
 
 //--
 // Static board list
@@ -130,27 +131,27 @@ void FPGAToolchain::SetProjectFiles(const wxArrayString& files)
 bool FPGAToolchain::IsYosysAvailable() const
 {
     wxArrayString o, e;
-    return Execute("\"" + m_yosysPath + "\" --version", o, e) == 0;
+    return Execute("\"" + m_yosysPath + "\" --version", o, e, m_yosysPath) == 0;
 }
 
 bool FPGAToolchain::IsNextpnrAvailable() const
 {
     wxArrayString o, e;
-    return Execute("\"" + m_nextpnrPath + "\" --version", o, e) == 0;
+    return Execute("\"" + m_nextpnrPath + "\" --version", o, e, m_nextpnrPath) == 0;
 }
 
 bool FPGAToolchain::IsIcepackAvailable() const
 {
     wxArrayString o, e;
     // icepack with no args exits non-zero but prints help - check stderr not empty
-    Execute("\"" + m_icepackPath + "\"", o, e);
+    Execute("\"" + m_icepackPath + "\"", o, e, m_icepackPath);
     return !e.IsEmpty() || !o.IsEmpty();
 }
 
 bool FPGAToolchain::IsOpenFPGALoaderAvailable() const
 {
     wxArrayString o, e;
-    return Execute("\"" + m_loaderPath + "\" --Version", o, e) == 0;
+    return Execute("\"" + m_loaderPath + "\" --Version", o, e, m_loaderPath) == 0;
 }
 
 //--
@@ -158,22 +159,73 @@ bool FPGAToolchain::IsOpenFPGALoaderAvailable() const
 //--
 int FPGAToolchain::Execute(const wxString& cmd,
                             wxArrayString& output,
-                            wxArrayString& errors) const
+                            wxArrayString& errors,
+                            const wxString& toolPath) const
 {
     wxExecuteEnv env;
+    bool needEnv = false;
+
     if (!m_workDir.IsEmpty())
-        env.cwd = m_workDir;
+    {
+        env.cwd  = m_workDir;
+        needEnv  = true;
+    }
+
+    // OSS CAD Suite (and similar bundles) ship each tool's runtime DLLs in a
+    // lib/ directory next to bin/, and only add both to PATH via their own
+    // launcher script. Pointing Settings straight at bin/yosys.exe skips that
+    // script, so the tool fails to even start (e.g. "libffi-8.dll not found")
+    // unless we add lib/ back onto PATH ourselves.
+    if (!toolPath.IsEmpty())
+    {
+        wxString binDir = wxFileName(toolPath).GetPath();
+        wxFileName libFn = wxFileName::DirName(binDir);
+        libFn.RemoveLastDir();
+        libFn.AppendDir("lib");
+        wxString libDir = libFn.GetPath();
+
+        if (!libDir.IsEmpty() && wxDirExists(libDir))
+        {
+            wxGetEnvMap(&env.env);
+
+            // wxGetEnvMap() preserves whatever casing Windows stored the
+            // variable under - almost always "Path", not "PATH". Find and
+            // erase any case-insensitive match by key first (wx's hash map
+            // erase(iterator) returns void, doesn't invalidate-and-advance
+            // like std::map, so collect keys before erasing) so we replace
+            // it rather than add a second, conflicting entry alongside it.
+            wxString existingPath;
+            wxArrayString staleKeys;
+            for (const auto& kv : env.env)
+                if (kv.first.CmpNoCase("PATH") == 0)
+                {
+                    existingPath = kv.second;
+                    staleKeys.Add(kv.first);
+                }
+            for (const wxString& k : staleKeys)
+                env.env.erase(k);
+
+            env.env["PATH"] = libDir + wxPATH_SEP + binDir
+                             + (existingPath.IsEmpty() ? wxString()
+                                                        : wxPATH_SEP + existingPath);
+            needEnv = true;
+        }
+    }
 
     return (int)wxExecute(cmd, output, errors, wxEXEC_SYNC,
-                          m_workDir.IsEmpty() ? nullptr : &env);
+                          needEnv ? &env : nullptr);
 }
 
 //--
 // SynthReport parsing
-// Yosys synth_ice40 prints lines like:
-//   "   SB_LUT4                        42"
-//   "   SB_DFF                          8"
-//   "   SB_RAM40_4K                     2"
+// Yosys prints the cell breakdown as "<count>   <CellName>", count first, e.g.:
+//   "        1   SB_LUT4"
+//   "        8   SB_DFF"
+//   "        2   SB_RAM40_4K"
+// under a "=== <module> ===" header ("Local Count" - just this module) and
+// again under "=== design hierarchy ===" (count including submodules) - only
+// the first block is parsed, otherwise every count would be doubled for any
+// design with submodules.
 //--
 SynthReport FPGAToolchain::ParseYosysReport(const wxArrayString& lines)
 {
@@ -181,41 +233,53 @@ SynthReport FPGAToolchain::ParseYosysReport(const wxArrayString& lines)
     int dffs = 0;
     int brams = 0;
 
+    // Pulls the first whitespace-separated integer token out of the line,
+    // wherever it falls - Yosys puts it before the cell name, not after.
+    auto firstIntToken = [](const wxString& ln) -> long {
+        wxStringTokenizer tok(ln, " \t");
+        while (tok.HasMoreTokens())
+        {
+            long v;
+            if (tok.GetNextToken().ToLong(&v))
+                return v;
+        }
+        return 0;
+    };
+
     for (size_t i = 0; i < lines.GetCount(); ++i)
     {
         wxString line = lines[i];
-        line.Trim(false); // strip leading whitespace
 
-        // Helper lambda: parse the count after the first space on a cell line
-        auto parseCount = [&](wxString& ln) -> long {
-            long v = 0;
-            ln.AfterFirst(' ').Trim(false).Trim(true).ToLong(&v);
-            return v;
-        };
+        // Stop before the submodule-inclusive block repeats the same names.
+        // Matches only the "=== design hierarchy ===" stats header, not the
+        // unrelated "Executing HIERARCHY pass (managing design hierarchy)"
+        // logged near the very start of every run.
+        if (line.Contains("=== design hierarchy ==="))
+            break;
 
         // iCE40 LUT
-        if (line.StartsWith("SB_LUT4"))
-            r.luts = (int)parseCount(line);
+        if (line.Contains("SB_LUT4"))
+            r.luts = (int)firstIntToken(line);
 
         // ECP5 LUT
-        if (line.StartsWith("LUT4"))
-            r.luts = (r.luts < 0 ? 0 : r.luts) + (int)parseCount(line);
+        if (line.Contains("LUT4") && !line.Contains("SB_LUT4"))
+            r.luts = (r.luts < 0 ? 0 : r.luts) + (int)firstIntToken(line);
 
         // iCE40 DFFs (all variants: SB_DFF, SB_DFFE, SB_DFFSR, ...)
-        if (line.StartsWith("SB_DFF"))
-            dffs += (int)parseCount(line);
+        if (line.Contains("SB_DFF"))
+            dffs += (int)firstIntToken(line);
 
         // ECP5 DFFs (FD1S3AX, FD1S3IX, FD1S3BX, TRELLIS_FF, ...)
-        if (line.StartsWith("FD1S3") || line.StartsWith("TRELLIS_FF"))
-            dffs += (int)parseCount(line);
+        if (line.Contains("FD1S3") || line.Contains("TRELLIS_FF"))
+            dffs += (int)firstIntToken(line);
 
         // iCE40 BRAM
-        if (line.StartsWith("SB_RAM40_4K"))
-            brams += (int)parseCount(line);
+        if (line.Contains("SB_RAM40_4K"))
+            brams += (int)firstIntToken(line);
 
         // ECP5 BRAM (DP16KD = 16Kbit; report in same unit as lutTotal for consistency)
-        if (line.StartsWith("DP16KD"))
-            brams += (int)parseCount(line);
+        if (line.Contains("DP16KD"))
+            brams += (int)firstIntToken(line);
     }
 
     if (r.luts >= 0)
@@ -360,7 +424,7 @@ bool FPGAToolchain::Synthesize(const wxString& filePath,
                + "  (top: " + topEntity + ")");
     output.Add("Script: " + ysFile);
 
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, m_yosysPath);
 
     if (exitCode == 0)
     {
@@ -396,7 +460,8 @@ bool FPGAToolchain::PlaceAndRoute(const wxString& jsonFile,
 
     // Pick the right nextpnr binary and output flag based on family
     bool isECP5 = (board.family == "ecp5");
-    wxString pnrBin  = isECP5 ? "\"" + m_nextpnrECP5Path + "\"" : "\"" + m_nextpnrPath + "\"";
+    wxString pnrPath = isECP5 ? m_nextpnrECP5Path : m_nextpnrPath;
+    wxString pnrBin  = "\"" + pnrPath + "\"";
     wxString outFlag = isECP5 ? "--textcfg" : "--asc";
 
     wxString cmd = pnrBin
@@ -411,7 +476,7 @@ bool FPGAToolchain::PlaceAndRoute(const wxString& jsonFile,
     output.Add("Place & Route: " + wxFileName(jsonFile).GetFullName()
                + "  (board: " + board.name + ")");
 
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, pnrPath);
 
     if (exitCode == 0)
         output.Add("P&R OK -> " + pnrOut);
@@ -440,6 +505,7 @@ bool FPGAToolchain::Pack(const wxString& ascFile,
     bool isECP5  = (ext == "config");
 
     wxString cmd;
+    wxString packerPath = isECP5 ? m_ecppackPath : m_icepackPath;
     if (isECP5)
     {
         // ecppack input.config output.bit
@@ -455,7 +521,7 @@ bool FPGAToolchain::Pack(const wxString& ascFile,
 
     output.Add("Packing: " + wxFileName(ascFile).GetFullName());
 
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, packerPath);
 
     if (exitCode == 0)
         output.Add("Pack OK -> " + outBinFile);
@@ -486,7 +552,7 @@ bool FPGAToolchain::Program(const wxString& bitstreamFile,
     output.Add("Programming board: " + board.name);
     output.Add("Bitstream: " + bitstreamFile);
 
-    int exitCode = Execute(cmd, output, errors);
+    int exitCode = Execute(cmd, output, errors, m_loaderPath);
 
     if (exitCode == 0)
         output.Add("Board programmed successfully.");

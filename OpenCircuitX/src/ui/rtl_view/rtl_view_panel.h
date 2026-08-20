@@ -11,7 +11,10 @@ class RTLViewPanel : public wxPanel
 public:
     explicit RTLViewPanel(wxWindow* parent);
 
-    void ParseAndShow(const wxString& vhdlCode);
+    // filePath is optional and only used to explain an empty result, e.g. to
+    // tell the user RTL View doesn't parse Verilog rather than drawing nothing.
+    void ParseAndShow(const wxString& vhdlCode,
+                      const wxString& filePath = wxEmptyString);
     void Clear();
     void ReapplyTheme();
 

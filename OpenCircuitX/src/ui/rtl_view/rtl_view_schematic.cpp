@@ -54,6 +54,7 @@ void RTLViewPanel::Schematic::Clear()
     m_netlist    = nullptr;
     m_hasContent = false;
     m_hasGates   = false;
+    m_emptyMsg.Clear();
     m_selGate    = -1;
     m_gpos.clear();
     m_logH       = 500;

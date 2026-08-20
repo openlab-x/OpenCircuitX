@@ -71,6 +71,10 @@ public:
                  bool hasContent, bool hasGates);
     void Clear();
 
+    // Replaces the default "save a VHDL file" placeholder text. Used to explain
+    // why nothing rendered, e.g. when the open file is Verilog.
+    void SetEmptyMessage(const wxString& msg) { m_emptyMsg = msg; }
+
     void   SetZoom(double z);
     void   ZoomIn()       { SetZoom(m_zoom * 1.25); }
     void   ZoomOut()      { SetZoom(m_zoom / 1.25); }
@@ -111,6 +115,7 @@ private:
     const RTLNetlist*     m_netlist    = nullptr;
     bool                  m_hasContent = false;
     bool                  m_hasGates   = false;
+    wxString              m_emptyMsg;
     double                m_zoom       = 1.0;
     int                   m_selGate    = -1;
 

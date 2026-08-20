@@ -110,7 +110,12 @@ private:
     // Returns empty string when workDir is not set.
     wxString GHDLWorkdirFlag() const;
 
+    // toolPath: full path to the executable being run (ghdl/iverilog/
+    // verilator). If its sibling lib/ directory exists, it's added to the
+    // child process's PATH and LD_LIBRARY_PATH so the tool can find its own
+    // runtime libraries even when only bin/ is configured.
     int Execute(const wxString& cmd,
                 wxArrayString& output,
-                wxArrayString& errors) const;
+                wxArrayString& errors,
+                const wxString& toolPath = wxEmptyString) const;
 };
