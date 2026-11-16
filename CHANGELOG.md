@@ -2,6 +2,20 @@
 
 ---
 
+## [1.1.1] - 2026-11-16
+
+A patch release for the project file (`.ocxproj`). Projects now stay clean, keep the right language, and still open after the folder is moved.
+
+### Fixed
+
+- Adding a file that was already in the project no longer adds it a second time. The check compared raw path strings, so `dir\tb.v` and `dir/tb.v` both got in, which is how a new project could end up with its testbench listed twice. Paths are now compared after normalizing separators, `./` and case (case only on Windows). Project files that already contain duplicates are cleaned up the next time they are saved.
+- Creating a new project while another project was open no longer copies the old project's source files into the new one.
+- Files added from inside the app (New File, Rename, Generate Testbench, New Project) are now stored relative to the project folder, for example `sub/counter.v`, instead of as a full path like `C:\Users\...\project/counter.v`. Projects can be moved, copied or shared without their file list pointing at the old location. Existing projects are converted on their next save. Files outside the project folder are left as they are.
+- A project's `[Language]` section now reflects its files. `Primary` was never updated after the project was created, so a Verilog-only project was saved as `Primary=VHDL`. It is now set from the majority of `.vhd`/`.vhdl` against `.v`/`.sv` files, and `Mixed=1` is set when both are present.
+- New projects now write `VHDLStandard=08` instead of `2008`, matching the short form the Std dropdown and GHDL use. Older project files with `2008`, `1993` or `2019` are read correctly.
+
+---
+
 ## [1.1.0] - 2026-08-20
 
 Linux and macOS builds work for the first time, and the Verilog simulation workflow now behaves the same way the VHDL one always did.

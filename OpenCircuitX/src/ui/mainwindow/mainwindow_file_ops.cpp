@@ -416,7 +416,7 @@ void MainWindow::OnNewProject(wxCommandEvent& event)
     // Build and save the project file
     currentProject.SetDefaults(projectName);
     if (!srcText.IsEmpty())
-        currentProject.sourceFiles.Add(srcFile);
+        currentProject.AddSourceFile(srcFile, fullProjectPath);
     wxString projectFilePath = fullProjectPath + "/" + projectName + ".ocxproj";
 
     if (!currentProject.Save(projectFilePath))
@@ -594,9 +594,8 @@ void MainWindow::OnSaveFile(wxCommandEvent& event)
 
         // Add to project if open and not already tracked
         if (!currentProjectDirectory.IsEmpty() &&
-            currentProject.sourceFiles.Index(filePath) == wxNOT_FOUND)
+            currentProject.AddSourceFile(filePath, currentProjectDirectory))
         {
-            currentProject.sourceFiles.Add(filePath);
             LoadProjectFiles(currentProjectDirectory);
         }
     }

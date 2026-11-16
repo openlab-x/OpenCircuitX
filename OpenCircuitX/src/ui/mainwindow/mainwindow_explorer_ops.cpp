@@ -342,7 +342,7 @@ void MainWindow::OnNewFileInProject(wxCommandEvent& event)
         textOut << content;
     }
 
-    currentProject.sourceFiles.Add(filePath);
+    currentProject.AddSourceFile(filePath, currentProjectDirectory);
     SaveProjectState();
     LoadProjectFiles(currentProjectDirectory);
     logicEditor->LoadFile(filePath);
@@ -408,11 +408,11 @@ void MainWindow::OnRenameFile(wxCommandEvent&)
     }
 
     // Update project source list (sourceFiles stores full paths)
-    int idx = currentProject.sourceFiles.Index(oldPath);
+    int idx = currentProject.FindSourceFile(oldPath, currentProjectDirectory);
     if (idx != wxNOT_FOUND)
     {
         currentProject.sourceFiles.RemoveAt(idx);
-        currentProject.sourceFiles.Add(newPath);
+        currentProject.AddSourceFile(newPath, currentProjectDirectory);
         SaveProjectState();
     }
 

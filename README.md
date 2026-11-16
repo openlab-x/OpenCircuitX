@@ -6,7 +6,7 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-17-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Version](https://img.shields.io/badge/Version-1.1.0-gray)
+![Version](https://img.shields.io/badge/Version-1.1.1-gray)
 ![GUI](https://img.shields.io/badge/GUI-wxWidgets%203.2-blueviolet)
 
 </div>
@@ -22,10 +22,30 @@ See [Why OpenCircuitX?](#why-opencircuitx) below for how it compares to Active-H
 | Platform | Status | Get it |
 |---|---|---|
 | Windows 10/11 (x64) | Available | [Download the latest installer](https://github.com/openlab-x/OpenCircuitX/releases/latest/download/OpenCircuitX-Setup.exe) |
-| Linux | No pre-built package yet, an AppImage is planned | [Build from source](#building) |
+| Linux | Available through GNU Guix (see below), an AppImage is planned | [Build from source](#building) |
+| FreeBSD | Available in the official Ports Collection | [`devel/opencircuitx`](https://www.freshports.org/devel/opencircuitx/), [FreeBSD Ports](https://ports.freebsd.org/cgi/ports.cgi?query=OpenCircuitX&stype=all&sektion=all) |
+| GNU Guix (any Linux distro) | Available in the official Guix channel | [`opencircuitx`](https://packages.guix.gnu.org/packages/opencircuitx/1.1.0/) |
 | macOS | No pre-built package yet, a DMG is planned | [Build from source](#building) |
 
-The Windows link always points at the newest release; see [Requirements](#requirements) for details. Want a specific older version instead - to test something, or compare behavior across releases? Every past release stays up on the [Releases page](https://github.com/openlab-x/OpenCircuitX/releases), each with its own versioned installer.
+The Windows link always points at the newest release; see [Requirements](#requirements) for details. Want a specific older version instead, to test something or compare behavior across releases? Every past release stays up on the [Releases page](https://github.com/openlab-x/OpenCircuitX/releases), each with its own versioned installer.
+
+**FreeBSD**, as a binary package or from ports:
+
+```sh
+pkg install opencircuitx
+# or
+cd /usr/ports/devel/opencircuitx/ && make install clean
+```
+
+The port pulls in GHDL, Icarus Verilog, Verilator, Yosys, nextpnr and openFPGALoader as dependencies, so the toolchain is ready to use straight after install.
+
+**GNU Guix:**
+
+```sh
+guix install opencircuitx
+```
+
+Thanks to the FreeBSD and GNU Guix communities for packaging OpenCircuitX. Both packages are maintained by them, not by this project, so they can lag a little behind the newest release here.
 
 ## Table of Contents
 

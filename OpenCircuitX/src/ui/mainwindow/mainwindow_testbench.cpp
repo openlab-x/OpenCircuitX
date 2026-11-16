@@ -344,8 +344,7 @@ void MainWindow::OnGenTestbench(wxCommandEvent&)
             }
             f.Write(tb.ToUTF8(), tb.ToUTF8().length());
             f.Close();
-            if (currentProject.sourceFiles.Index(tbPath) == wxNOT_FOUND)
-                currentProject.sourceFiles.Add(tbPath);
+            currentProject.AddSourceFile(tbPath, currentProjectDirectory);
             SaveProjectState();
             LoadProjectFiles(currentProjectDirectory);
             logicEditor->LoadFile(tbPath);
@@ -492,8 +491,7 @@ void MainWindow::OnGenTestbench(wxCommandEvent&)
         }
         f.Write(tb.ToUTF8(), tb.ToUTF8().length());
         f.Close();
-        if (currentProject.sourceFiles.Index(tbPath) == wxNOT_FOUND)
-            currentProject.sourceFiles.Add(tbPath);
+        currentProject.AddSourceFile(tbPath, currentProjectDirectory);
         SaveProjectState();
         LoadProjectFiles(currentProjectDirectory);
         logicEditor->LoadFile(tbPath);

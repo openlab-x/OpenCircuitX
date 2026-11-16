@@ -1,6 +1,7 @@
 #include "project_file.h"
 #include <wx/fileconf.h>
 #include <wx/wfstream.h>
+#include <wx/filename.h>
 
 ProjectFile::ProjectFile()
 {
@@ -19,9 +20,16 @@ void ProjectFile::SetDefaults(const wxString& name)
     license              = "";
 
     primaryLanguage      = "VHDL";
-    vhdlStandard         = "2008";
+    vhdlStandard         = "08";
     verilogStandard      = "2001";
     mixed                = false;
+
+    // A new project reuses this object, so lists from the previously open
+    // project must not carry over into it.
+    sourceFiles.Clear();
+    externalLibs.Clear();
+    schematicFiles.Clear();
+    constraintFiles.Clear();
 
     analyzeOrder         = "";
     workLibrary          = "work";
@@ -75,9 +83,16 @@ bool ProjectFile::Load(const wxString& filePath)
 
     // [Language]
     cfg.Read("Language/Primary",         &primaryLanguage,  "VHDL");
-    cfg.Read("Language/VHDLStandard",    &vhdlStandard,     "2008");
+    cfg.Read("Language/VHDLStandard",    &vhdlStandard,     "08");
     cfg.Read("Language/VerilogStandard", &verilogStandard,  "2001");
     cfg.Read("Language/Mixed",           &mixed,            false);
+
+    // Older project files may carry the long form of the year. The rest of
+    // the app (Run Config bar, GHDL --std flag) only understands the short
+    // GHDL codes.
+    if      (vhdlStandard == "2008") vhdlStandard = "08";
+    else if (vhdlStandard == "1993") vhdlStandard = "93";
+    else if (vhdlStandard == "2019") vhdlStandard = "19";
 
     // [Files]
     sourceFiles.Clear();
@@ -167,6 +182,9 @@ bool ProjectFile::Save(const wxString& filePath)
 {
     lastModified = wxDateTime::Now().FormatISOCombined(' ');
 
+    RemoveDuplicateSourceFiles(wxFileName(filePath).GetPath());
+    UpdateLanguageFromFiles();
+
     wxFileConfig cfg;
 
     // [OpenCircuitX]
@@ -248,4 +266,97 @@ bool ProjectFile::Save(const wxString& filePath)
 
     cfg.Save(output);
     return true;
+}
+
+//--
+// Source file list helpers
+//--
+
+wxString ProjectFile::NormalizePath(const wxString& path, const wxString& baseDir)
+{
+    wxFileName fn(path);
+    fn.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_ABSOLUTE, baseDir);
+    wxString norm = fn.GetFullPath();
+    return norm.IsEmpty() ? path : norm;
+}
+
+int ProjectFile::FindSourceFile(const wxString& path, const wxString& baseDir) const
+{
+    // Windows paths are case-insensitive, Linux/macOS paths are not.
+#ifdef __WXMSW__
+    const bool caseSensitive = false;
+#else
+    const bool caseSensitive = true;
+#endif
+    wxString norm = NormalizePath(path, baseDir);
+    for (size_t i = 0; i < sourceFiles.GetCount(); ++i)
+        if (NormalizePath(sourceFiles[i], baseDir).IsSameAs(norm, caseSensitive))
+            return (int)i;
+    return wxNOT_FOUND;
+}
+
+wxString ProjectFile::ToStoredPath(const wxString& path, const wxString& baseDir)
+{
+    if (baseDir.IsEmpty())
+        return path;
+
+#ifdef __WXMSW__
+    const bool caseSensitive = false;
+#else
+    const bool caseSensitive = true;
+#endif
+    wxString dir = NormalizePath(baseDir, wxEmptyString);
+    if (!dir.EndsWith(wxFILE_SEP_PATH))
+        dir += wxFILE_SEP_PATH;
+    wxString full = NormalizePath(path, baseDir);
+
+    // Files outside the project folder keep whatever form they were given in.
+    if (!full.Left(dir.length()).IsSameAs(dir, caseSensitive))
+        return path;
+
+    // Inside the project: relative, with forward slashes, so the project
+    // still opens after the folder is moved or copied to another machine.
+    wxFileName fn(full);
+    fn.MakeRelativeTo(dir);
+    return fn.GetFullPath(wxPATH_UNIX);
+}
+
+bool ProjectFile::AddSourceFile(const wxString& path, const wxString& baseDir)
+{
+    if (FindSourceFile(path, baseDir) != wxNOT_FOUND)
+        return false;
+    sourceFiles.Add(ToStoredPath(path, baseDir));
+    return true;
+}
+
+void ProjectFile::RemoveDuplicateSourceFiles(const wxString& baseDir)
+{
+    wxArrayString original = sourceFiles;
+    sourceFiles.Clear();
+    for (size_t i = 0; i < original.GetCount(); ++i)
+        AddSourceFile(original[i], baseDir);
+}
+
+void ProjectFile::UpdateLanguageFromFiles()
+{
+    size_t vhdlCount = 0, verilogCount = 0;
+    for (size_t i = 0; i < sourceFiles.GetCount(); ++i)
+    {
+        wxString ext = wxFileName(sourceFiles[i]).GetExt().Lower();
+        if (ext == "vhd" || ext == "vhdl")
+            ++vhdlCount;
+        else if (ext == "v" || ext == "sv")
+            ++verilogCount;
+    }
+
+    // No HDL files yet: keep whatever the project was created with.
+    if (vhdlCount == 0 && verilogCount == 0)
+        return;
+
+    mixed = (vhdlCount > 0 && verilogCount > 0);
+    if (vhdlCount > verilogCount)
+        primaryLanguage = "VHDL";
+    else if (verilogCount > vhdlCount)
+        primaryLanguage = "Verilog";
+    // On a tie the existing value stays.
 }
